@@ -6,6 +6,10 @@ import (
 	"log"
 	"time"
 
+	"github.com/go-jet/jet/v2/postgres"
+	"github.com/priyankasahasmal/golang/.gen/bootcamp_db_qc7b/public/model"
+	"github.com/priyankasahasmal/golang/.gen/bootcamp_db_qc7b/public/table"
+
 	_ "github.com/lib/pq" // PostgreSQL driver
 )
 
@@ -47,11 +51,31 @@ func CreateDbObject() error {
 	return nil
 }
 
-func main() {
-	if err := CreateDbObject(); err != nil {
-		log.Fatal("Database connection failed:", err)
-	}
+func FetchAllUsersQuery(tx *sql.Tx, pointerErr *error) []FetchAllUsersOutput {
+    if *pointerErr != nil {
+        return []FetchAllUsersOutput{}
+    }
 
-	// Continue with your logic here
+    type destType struct {
+        model.User // ✅ Not Users
+    }
+    var dest []destType
+
+    stmt := postgres.SELECT(
+        table.Users.AllColumns, // ✅ Must match actual table
+    ).FROM(table.Users)
+
+    err := stmt.Query(tx, &dest)
+    if err != nil {
+        *pointerErr = err
+        return []FetchAllUsersOutput{}
+    }
+
+    return funk.Map(dest, func(item destType) FetchAllUsersOutput {
+        return FetchAllUsersOutput{
+            Id:    int(item.User.UserID),
+            Email: item.User.Email,
+            Name:  utils.GetIfNotNilString(item.User.Name),
+        }
+    }).([]FetchAllUsersOutput)
 }
-
