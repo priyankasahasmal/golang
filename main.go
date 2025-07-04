@@ -51,31 +51,22 @@ func CreateDbObject() error {
 	return nil
 }
 
-func FetchAllUsersQuery(tx *sql.Tx, pointerErr *error) []FetchAllUsersOutput {
-    if *pointerErr != nil {
-        return []FetchAllUsersOutput{}
-    }
+package model_test
 
-    type destType struct {
-        model.User // ✅ Not Users
-    }
-    var dest []destType
+import (
+	"testing"
 
-    stmt := postgres.SELECT(
-        table.Users.AllColumns, // ✅ Must match actual table
-    ).FROM(table.Users)
+	"github.com/google/go-cmp/cmp"
+	"module github.com/priyankasahasmal/golang"
+)
 
-    err := stmt.Query(tx, &dest)
-    if err != nil {
-        *pointerErr = err
-        return []FetchAllUsersOutput{}
-    }
+func TestUserComparison(t *testing.T) {
+	a := model.Users{UserID: 1, Email: "a@example.com"}
+	b := model.Users{UserID: 1, Email: "a@example.com"}
 
-    return funk.Map(dest, func(item destType) FetchAllUsersOutput {
-        return FetchAllUsersOutput{
-            Id:    int(item.User.UserID),
-            Email: item.User.Email,
-            Name:  utils.GetIfNotNilString(item.User.Name),
-        }
-    }).([]FetchAllUsersOutput)
+	if diff := cmp.Diff(a, b); diff != "" {
+		t.Errorf("Users mismatch (-a +b):\n%s", diff)
+	}
 }
+
+
